@@ -273,22 +273,28 @@ public class LockInternals
 
             while ( (client.getState() == CuratorFrameworkState.STARTED) && !haveTheLock )
             {
+                // 所有节点，从小到大排序
                 List<String>        children = getSortedChildren();
+                // 当前顺序节点序号
                 String              sequenceNodeName = ourPath.substring(basePath.length() + 1); // +1 to include the slash
 
+                // 获取锁，maxLeases默认等于1
                 PredicateResults    predicateResults = driver.getsTheLock(client, children, sequenceNodeName, maxLeases);
                 if ( predicateResults.getsTheLock() )
                 {
+                    // 如果获取到锁，直接返回
                     haveTheLock = true;
                 }
                 else
                 {
+                    // 前一个顺序节点path
                     String  previousSequencePath = basePath + "/" + predicateResults.getPathToWatch();
 
                     synchronized(this)
                     {
                         try 
                         {
+                            // 设置zk watcher，然后当前线程睡眠等待watch收到更改事件唤醒
                             // use getData() instead of exists() to avoid leaving unneeded watchers which is a type of resource leak
                             client.getData().usingWatcher(watcher).forPath(previousSequencePath);
                             if ( millisToWait != null )

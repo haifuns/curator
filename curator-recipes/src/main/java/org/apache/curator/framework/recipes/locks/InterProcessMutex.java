@@ -140,6 +140,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
             throw new IllegalMonitorStateException("You do not own the lock: " + basePath);
         }
 
+        // 加锁次数递减1，如果剩余的加锁次数大于0，直接返回
         int newLockCount = lockData.lockCount.decrementAndGet();
         if ( newLockCount > 0 )
         {
@@ -151,10 +152,12 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         }
         try
         {
+            // 如果只重入了1次，删除锁
             internals.releaseLock(lockData.lockPath);
         }
         finally
         {
+            // 移除线程锁map
             threadData.remove(currentThread);
         }
     }
@@ -224,6 +227,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         LockData lockData = threadData.get(currentThread);
         if ( lockData != null )
         {
+            // 如果重复加锁，计数器加1直接返回
             // re-entering
             lockData.lockCount.incrementAndGet();
             return true;
@@ -232,6 +236,7 @@ public class InterProcessMutex implements InterProcessLock, Revocable<InterProce
         String lockPath = internals.attemptLock(time, unit, getLockNodeBytes());
         if ( lockPath != null )
         {
+            // 如果加锁成功，添加到线程锁map里
             LockData newLockData = new LockData(currentThread, lockPath);
             threadData.put(currentThread, newLockData);
             return true;
