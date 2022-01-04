@@ -126,8 +126,10 @@ public class InterProcessSemaphoreV2
     {
         this.client = client;
         path = PathUtils.validatePath(path);
+        // path/locks
         lock = new InterProcessMutex(client, ZKPaths.makePath(path, LOCK_PARENT));
         this.maxLeases = (count != null) ? count.getCount() : maxLeases;
+        // path/leases
         leasesPath = ZKPaths.makePath(path, LEASE_PARENT);
 
         if ( count != null )
@@ -348,6 +350,7 @@ public class InterProcessSemaphoreV2
         }
         else
         {
+            // 内部可重入锁，尝试加锁
             lock.acquire();
         }
 
@@ -356,6 +359,7 @@ public class InterProcessSemaphoreV2
         try
         {
             PathAndBytesable<String> createBuilder = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
+            // 创建瞬时有序节点，path/leases
             String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
             String nodeName = ZKPaths.getNodeFromPath(path);
             lease = makeLease(path);
@@ -372,6 +376,7 @@ public class InterProcessSemaphoreV2
                     List<String> children;
                     try
                     {
+                        // 获取当前path/leases下所有子节点，注册watcher
                         children = client.getChildren().usingWatcher(watcher).forPath(leasesPath);
                     }
                     catch ( Exception e )
@@ -390,6 +395,7 @@ public class InterProcessSemaphoreV2
                         return InternalAcquireResult.RETRY_DUE_TO_MISSING_NODE;
                     }
 
+                    // 如果字节点数量小于最大值，那么获取成功
                     if ( children.size() <= maxLeases )
                     {
                         break;
@@ -406,6 +412,7 @@ public class InterProcessSemaphoreV2
                     }
                     else
                     {
+                        // 失败阻塞
                         wait();
                     }
                 }
@@ -413,6 +420,7 @@ public class InterProcessSemaphoreV2
         }
         finally
         {
+            // 获取完毕释放内部锁
             lock.release();
         }
         builder.add(Preconditions.checkNotNull(lease));
@@ -434,6 +442,7 @@ public class InterProcessSemaphoreV2
             {
                 try
                 {
+                    // 释放直接删除path/leases下的子节点
                     client.delete().guaranteed().forPath(path);
                 }
                 catch ( KeeperException.NoNodeException e )
