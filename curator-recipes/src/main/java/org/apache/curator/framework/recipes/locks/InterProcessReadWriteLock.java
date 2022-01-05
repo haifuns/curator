@@ -135,6 +135,7 @@ public class InterProcessReadWriteLock
             basePath,
             WRITE_LOCK_NAME,
             lockData,
+            // 写锁只能加一个
             1,
             new SortingLockInternalsDriver()
             {
@@ -152,6 +153,7 @@ public class InterProcessReadWriteLock
             basePath,
             READ_LOCK_NAME,
             lockData,
+                // 读锁最大加锁次数
             Integer.MAX_VALUE,
             new SortingLockInternalsDriver()
             {
@@ -186,13 +188,16 @@ public class InterProcessReadWriteLock
 
     private PredicateResults readLockPredicate(List<String> children, String sequenceNodeName) throws Exception
     {
+        // 如果是当前线程加的读锁，那么写锁可以加锁成功
         if ( writeMutex.isOwnedByCurrentThread() )
         {
             return new PredicateResults(null, true);
         }
 
         int         index = 0;
+        // 最前面的写锁位置
         int         firstWriteIndex = Integer.MAX_VALUE;
+        // 当前读锁的位置
         int         ourIndex = -1;
         for ( String node : children )
         {
@@ -211,6 +216,7 @@ public class InterProcessReadWriteLock
 
         StandardLockInternalsDriver.validateOurIndex(sequenceNodeName, ourIndex);
 
+        // 如果当前读锁前面有写锁则加锁失败，否则加锁成功
         boolean     getsTheLock = (ourIndex < firstWriteIndex);
         String      pathToWatch = getsTheLock ? null : children.get(firstWriteIndex);
         return new PredicateResults(pathToWatch, getsTheLock);
