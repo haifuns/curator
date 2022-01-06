@@ -359,7 +359,7 @@ public class InterProcessSemaphoreV2
         try
         {
             PathAndBytesable<String> createBuilder = client.create().creatingParentContainersIfNeeded().withProtection().withMode(CreateMode.EPHEMERAL_SEQUENTIAL);
-            // 创建瞬时有序节点，path/leases
+            // 创建临时有序节点，path/leases
             String path = (nodeData != null) ? createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME), nodeData) : createBuilder.forPath(ZKPaths.makePath(leasesPath, LEASE_BASE_NAME));
             String nodeName = ZKPaths.getNodeFromPath(path);
             lease = makeLease(path);
