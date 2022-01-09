@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 public interface CuratorFramework extends Closeable
 {
     /**
+     * zk客户端初始化入口
      * Start the client. Most mutator methods will not work until the client is started
      */
     public void start();

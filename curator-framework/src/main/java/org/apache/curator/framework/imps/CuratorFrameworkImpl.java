@@ -22,7 +22,6 @@ package org.apache.curator.framework.imps;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import org.apache.curator.CuratorConnectionLossException;
 import org.apache.curator.CuratorZookeeperClient;
@@ -38,26 +37,17 @@ import org.apache.curator.framework.listen.ListenerContainer;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.framework.state.ConnectionStateManager;
-import org.apache.curator.utils.DebugUtils;
-import org.apache.curator.utils.EnsurePath;
-import org.apache.curator.utils.ThreadUtils;
-import org.apache.curator.utils.ZKPaths;
-import org.apache.curator.utils.ZookeeperFactory;
+import org.apache.curator.utils.*;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.DelayQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -99,6 +89,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
     public CuratorFrameworkImpl(CuratorFrameworkFactory.Builder builder)
     {
+        // 创建zookeeper工厂
         ZookeeperFactory localZookeeperFactory = makeZookeeperFactory(builder.getZookeeperFactory());
         this.client = new CuratorZookeeperClient(localZookeeperFactory, builder.getEnsembleProvider(), builder.getSessionTimeoutMs(), builder.getConnectionTimeoutMs(), new Watcher()
         {
@@ -240,6 +231,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
         try
         {
+            // 启动一个线程监听连接状态变更事件
             connectionStateManager.start(); // ordering dependency - must be called before client.start()
 
             final ConnectionStateListener listener = new ConnectionStateListener()
@@ -256,6 +248,7 @@ public class CuratorFrameworkImpl implements CuratorFramework
 
             this.getConnectionStateListenable().addListener(listener);
 
+            // 创建原生zk客户端
             client.start();
 
             executorService = Executors.newSingleThreadScheduledExecutor(threadFactory);

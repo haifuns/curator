@@ -19,11 +19,11 @@
 package org.apache.curator;
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.drivers.EventTrace;
 import org.apache.curator.drivers.OperationTrace;
 import org.apache.curator.drivers.TracerDriver;
 import org.apache.curator.ensemble.EnsembleProvider;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.DebugUtils;
 import org.apache.curator.utils.ThreadUtils;
 import org.apache.curator.utils.ZookeeperFactory;
@@ -33,6 +33,7 @@ import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Queue;
@@ -106,6 +107,7 @@ class ConnectionState implements Watcher, Closeable
     {
         log.debug("Starting");
         ensembleProvider.start();
+        // 创建zk连接
         reset();
     }
 
@@ -259,6 +261,7 @@ class ConnectionState implements Watcher, Closeable
         isConnected.set(false);
         connectionStartMs = System.currentTimeMillis();
         zooKeeper.closeAndReset();
+        // 初始化zookeeper连接
         zooKeeper.getZooKeeper();   // initiate connection
     }
 
